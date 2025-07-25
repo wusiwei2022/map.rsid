@@ -118,7 +118,7 @@ sum(duplicated(snp151common$rsid))  # check the uniqueness of rsids: no duplicat
 ```
 
 ### Format and map for Genes & Health BMI GWAS subset data
-We only did the mapping for the genetic variants on chromosome X. Since column "rsid" have the same information as SNPID, we removed this column. The genetic position in GWAS summary data is usually the coordinate end of the genetic variant. Therefore, we use "chrom" and "chromEnd" to map rsid. There are 9,527,863 chromosomal variants carried for RSID mapping. 7,105,989 variants are successfully mapped while 6,509,534 SNPs have alleles matched with alleles in reference data.
+We only did the mapping for the genetic variants on autosome. Since column "rsid" have the same information as SNPID, we removed this column. The genetic position in GWAS summary data is usually the coordinate end of the genetic variant. Therefore, we use "chrom" and "chromEnd" to map rsid. There are 9,527,863 chromosomal variants carried for RSID mapping. 7,105,989 variants are successfully mapped while 6,509,534 SNPs have alleles matched with alleles in reference data. You can use the same pipeline if you need to map the fullset GWAS summary data. You can also do the conversion based on GRCh38 genetic coordinate by using the GRCh38 bridge file.
 ```{r}
 bmi_gwas = fread("../data/gwas_bmi_snp151common.input")
 ```
@@ -131,7 +131,6 @@ dim(bmi_gwas)
 ```
 
 ```{r}
-bmi_gwas = bmi_gwas %>% mutate(CHR = as.character(CHR))
 bmi_gwas = right_join(snp151common %>% select(-chromStart), bmi_gwas, by = c("chrom" = "CHR", "chromEnd" = "POS"))
 # paste0(dim(bmi_gwas %>% filter(is.na(name)))[1], " genetic variants are unmappped")
 bmi_gwas = bmi_gwas %>% filter(!is.na(name))
@@ -146,5 +145,5 @@ dim(bmi_gwas)[1]
 ```{r}
 bmi_gwas = bmi_gwas %>% select(-alleles)
 colnames(bmi_gwas) = c("CHR", "POS", "RSID", "SNPID", "Allele1", "Allele2", "AC_Allele2", "AF_Allele2", "imputationInfo", "N", "BETA", "SE", "Tstat", "p.value", "varT", "varTstar")
-fwrite(bmi_gwas, "../results/gwas_bmi_snp151common/bmi_gwas_subset.rsid", sep = " ", row.names = FALSE)
+fwrite(bmi_gwas, "../results/gwas_bmi_snp151common/bmi_gwas.rsid")
 ```
