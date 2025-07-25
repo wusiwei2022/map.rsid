@@ -56,3 +56,95 @@ wget https://hgdownload.cse.ucsc.edu/goldenpath/hg19/database/snp151Common.txt.g
 # wget https://hgdownload.cse.ucsc.edu/goldenpath/hg38/database/snp151.txt.gz # complete variants (GRCh38)
 wget https://hgdownload.cse.ucsc.edu/goldenpath/hg38/database/snp151Common.txt.gz # common variants (GRCh38)
 ```
+
+### Process the snp151common bridging genetic coordinate and RSID
+The bridge file snp151common includes 26 columns, the field name and descriptions are as follows. In this tutorial, we removed cDNA and unknown variants. We will only map genetic variants on chromosome 1 - 22, and  therefore removed genetic variants X chromosome, Y chromosome, and random sequence scaffold. We only map SNPs in this tutorial, and you may try to map all the genetic variants by not filtering by class == "single". Only colnames "chrom", "chromStart", "chromEnd", "name", and "alleles" will be used for mapping.
+```{r}
+snp151common = fread("snp151Common.txt.gz")
+```
+
+```{r}
+colnames(snp151common) = c("bin", #  Indexing field to speed chromosome range queries.
+                           "chrom", # Reference sequence chromosome or scaffold
+                           "chromStart", # Start position in chrom
+                           "chromEnd", # End position in chrom
+                           "name", # dbSNP Reference SNP (rs) identifier
+                           "score", # Not used
+                           "strand", # Which DNA strand contains the observed alleles
+                           "refNCBI", # Reference genomic sequence from dbSNP
+                           "refUCSC", # Reference genomic sequence from UCSC lookup of chrom,chromStart,chromEnd
+                           "observed", # The sequences of the observed alleles from rs-fasta files
+                           "molType", # Sample type from exemplar submitted SNPs (ss)
+                           "class", # Class of variant (single, in-del, named, mixed, etc.)
+                           "valid", # Validation status of the SNP
+                           "avHet", # Average heterozygosity from all observations. Note: may be computed on small number of samples.
+                           "avHetSE", # Standard Error for the average heterozygosity
+                           "func", # Functional category of the SNP (coding-synon, coding-nonsynon, intron, etc.)
+                           "locType", # Type of mapping inferred from size on reference; may not agree with class
+                           "weight", # The quality of the alignment: 1 = unique mapping, 2 = non-unique, 3 = many matches
+                           "exceptions", # Unusual conditions noted by UCSC that may indicate a problem with the data
+                           "submitterCount", # Number of distinct submitter handles for submitted SNPs for this ref SNP
+                           "submitters", # List of submitter handles
+                           "alleleFreqCount", # Number of observed alleles with frequency data
+                           "alleles", # Observed alleles for which frequency data are available
+                           "alleleNs", # Count of chromosomes (2N) on which each allele was observed. Note: this is extrapolated by dbSNP from submitted frequencies and total sample 2N, and is not always an integer.
+                           "alleleFreqs", # Allele frequencies
+                           "bitfields" # SNP attributes extracted from dbSNP's SNP_bitfield table
+                           )
+```
+
+```{r}
+table(snp151common$molType)
+snp151common = snp151common %>% filter(molType == "genomic") # remove cDNA & unknown genetic variants (V11)
+```
+
+```{r}
+# table(snp151common$chrom)
+snp151common = snp151common %>% filter(chrom != "chrX" & chrom != "chrY") # remove genetic variants on chromosome X and Y
+snp151common = snp151common[!grepl("_", snp151common$chrom), ] # remove the random sequence scaffold
+```
+
+```{r}
+snp151common = snp151common %>% filter(class == "single") # Keep only SNPs
+```
+
+```{r}
+snp151common = snp151common[, c("chrom", "chromStart", "chromEnd", "name", "alleles")]
+snp151common = snp151common %>% mutate(chrom= gsub("chr", "", chrom))
+```
+
+```{r}
+sum(duplicated(snp151common$rsid))  # check the uniqueness of rsids: no duplicates
+```
+
+### Format and map for Genes & Health BMI GWAS subset data
+We only did the mapping for the genetic variants on chromosome X. Since column "rsid" have the same information as SNPID, we removed this column. The genetic position in GWAS summary data is usually the coordinate end of the genetic variant. Therefore, we use "chrom" and "chromEnd" to map rsid. There are 9,527,863 chromosomal variants carried for RSID mapping. 7,105,989 variants are successfully mapped while 6,509,534 SNPs have alleles matched with alleles in reference data.
+```{r}
+bmi_gwas = fread("../data/gwas_bmi_snp151common.input")
+```
+
+```{r}
+# table(bmi_gwas$CHR)
+bmi_gwas = bmi_gwas %>% filter(!(CHR == "X"))
+bmi_gwas = bmi_gwas %>% select(-c("rsid"))
+dim(bmi_gwas)
+```
+
+```{r}
+bmi_gwas = bmi_gwas %>% mutate(CHR = as.character(CHR))
+bmi_gwas = right_join(snp151common %>% select(-chromStart), bmi_gwas, by = c("chrom" = "CHR", "chromEnd" = "POS"))
+# paste0(dim(bmi_gwas %>% filter(is.na(name)))[1], " genetic variants are unmappped")
+bmi_gwas = bmi_gwas %>% filter(!is.na(name))
+dim(bmi_gwas)[1]
+```
+
+```{r}
+bmi_gwas = bmi_gwas[str_detect(bmi_gwas$alleles, bmi_gwas$Allele1) & str_detect(bmi_gwas$alleles, bmi_gwas$Allele2), ]
+dim(bmi_gwas)[1]
+```
+
+```{r}
+bmi_gwas = bmi_gwas %>% select(-alleles)
+colnames(bmi_gwas) = c("CHR", "POS", "RSID", "SNPID", "Allele1", "Allele2", "AC_Allele2", "AF_Allele2", "imputationInfo", "N", "BETA", "SE", "Tstat", "p.value", "varT", "varTstar")
+fwrite(bmi_gwas, "../results/gwas_bmi_snp151common/bmi_gwas_subset.rsid", sep = " ", row.names = FALSE)
+```
