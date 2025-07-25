@@ -147,3 +147,9 @@ bmi_gwas = bmi_gwas %>% select(-alleles)
 colnames(bmi_gwas) = c("CHR", "POS", "RSID", "SNPID", "Allele1", "Allele2", "AC_Allele2", "AF_Allele2", "imputationInfo", "N", "BETA", "SE", "Tstat", "p.value", "varT", "varTstar")
 fwrite(bmi_gwas, "../results/gwas_bmi_snp151common/bmi_gwas.rsid")
 ```
+
+## Approach 3: map with gwaslab
+gwaslab also has the methods to map genetic coordinate to RSIDs. You may refer to the method by consulting the official tutorial at https://cloufield.github.io/gwaslab/tutorial/#annotate-rsid. However, we find the method missed ~99% variants when running on Genes & Health BMI GWAS. Therefore, we don't recommend to map RSID with this method.
+
+## Conclusion
+Ensembel-vep can provide sophisticated and stable RSID mapping but also time-consuming and computationally expensive. Simply mapping with a brdige file can correctly map RSID for most of the common variants and do the mapping quite fast. We don't recommend to map with gwaslab because it doesn't always perform good on real data set.
