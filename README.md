@@ -1,4 +1,4 @@
-# Tutorial on how to convert genetic coordinate in GWAS summary statistics to RSIDs.
+# Tutorial on how to convert genetic coordinate in GWAS summary statistics to RSIDs
 
 ## Background
 Genetic variants can be presented in different formats in different GWAS summary statistics. The most common identifier for genetic variants is RSID. In some other GWAS genetic variants may be expressed as chr:pos or other identifiable marker.However, some GWAS downstream analysis need to work on multiple GWAS summary statistics, where compatible identifiers are essential across all the GWAS summary statistics. RSID is the most common and stable identifier for genetic variants. Therefore, in this tutorial, we presented different approaches to label RSID to genetic variants using the coordinate and allele information of the variants.
