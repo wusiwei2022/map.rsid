@@ -14,21 +14,25 @@ Please note ensembl-vep can only navigate forwardly. Therefore, please do run en
 ### Format the GWAS summary into vcf format
 You may refer to /results/gwas_bmi_vep_subset.input and /results/gwas_ukbppp_A1BG_vep.input as the template for the input of ensembl-vep. There are 5 columns in the input file including chromsome, genetic position, identifier, reference allele, and alternative allele. The identifier is not mandatory. You may fill chromsome:position:reference allele:alternative allele into this column or simply fill in with ".".
 
-### Map to RSID with ensembl-vep on Genes & Health BMI GWAS subset data (GRCh37)
+### Map to RSID with ensembl-vep on Genes & Health BMI GWAS subset data (GRCh38)
+You may replace GRCh38 with GRCh37 if the GWAS summary is based on GRCh37 genetic coordinate.
 ```
-singularity exec softwares/vep.sif\
+singularity exec\
+ --bind tutorials/map.rsid/data:/mnt/input\
+ --bind tutorials/map.rsid/results/gwas_bmi_vep:/mnt/output\
+ softwares/vep.sif\
  vep\
  --dir softwares/vep_data\
  --cache\
- --assembly GRCh37\
- -i tutorials/map.rsid/data/gwas_bmi_vep_subset.input\
+ --assembly GRCh38\
+ -i /mnt/input/gwas_bmi_vep_subset.input\
  --check_existing\
  --af_1kg\
  --pick\
  --force_overwrite\
  --tab\
  --fields Uploaded_variation,Location,Allele,SAS_AF,Existing_variation\
- -o tutorials/map.rsid/results/gwas_bmi_vep/gwas_bmi_vep_subset.annotation
+ -o /mnt/output/gwas_bmi_vep_subset.annotation
 ```
 
 ### Map to RSID with ensembl-vep on UKBPPP A1BG GWAS subset data (GRCh38)
